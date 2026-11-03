@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getSeries, getStations, getSummary } from './api'
 import type { Metric, SeriesResponse, Station, SummaryResponse } from './types'
+import {LineChart,  Line,  XAxis,  YAxis,  CartesianGrid,  Tooltip,  ResponsiveContainer,} from 'recharts'
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return 'Sem horário disponível'
@@ -155,9 +156,53 @@ export default function App() {
           <p className="empty-state">Não há leituras para esse período. Escolha outra janela ou estação.</p>
         )}
         {!loading && !error && Boolean(series?.points.length) && (
-          <div className="chart-placeholder" aria-label="Área reservada para o gráfico da série histórica">
-            <p>Complete esta área com Recharts.</p>
-            <p>{series?.points.length} pontos · unidade {series?.unit}</p>
+          <div style={{ width: '100%', height: 300, marginTop: 16 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={series?.points}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#dce7ee" />
+        <XAxis
+          dataKey="timestamp"
+          tickFormatter={(value) => {
+            const date = new Date(value)
+            return date.toLocaleTimeString('pt-BR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'America/Sao_Paulo',
+            })
+          }}
+          minTickGap={40}
+        />
+        <YAxis
+          unit={series?.unit === 'm' ? ' m' : ' mm/h'}
+          domain={['auto', 'auto']}
+          width={70}
+        />
+        <Tooltip
+          labelFormatter={(value) => {
+            const date = new Date(value)
+            return date.toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'America/Sao_Paulo',
+            }) + ' (horário de Brasília)'
+          }}
+          formatter={(value: number) => [
+            value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            series?.metric === 'level' ? 'Nível' : 'Chuva',
+          ]}
+        />
+        <Line
+          type="monotone"
+          dataKey="value"
+          stroke="#207ca2"
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 5 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
           </div>
         )}
         <div className="panel-footer">
